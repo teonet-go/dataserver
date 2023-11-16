@@ -20,9 +20,9 @@ type DataClient struct {
 	net.Conn
 }
 
-// NewDataClientWriter creates new DataClient, connects to DataServer and sends
-// request with start packets data.
-func NewDataClientWriter(remoteAddr string, startPacket *dataserver.StartPacket) (
+// NewDataClient creates new DataClient, connects to DataServer and sends
+// read or write request depending on the type of start packet.
+func NewDataClient(remoteAddr string, startPacket *dataserver.StartPacket) (
 	dc *DataClient, err error) {
 
 	// Create new DataClient object
@@ -49,4 +49,11 @@ func NewDataClientWriter(remoteAddr string, startPacket *dataserver.StartPacket)
 // time limit; see SetDeadline and SetWriteDeadline.
 func (dc *DataClient) Write(b []byte) (n int, err error) {
 	return dc.Conn.Write(b)
+}
+
+// Read reads data from the connection.
+// Read can be made to time out and return an error after a fixed
+// time limit; see SetDeadline and SetReadDeadline.
+func (dc *DataClient) Read(b []byte) (n int, err error) {
+	return dc.Conn.Read(b)
 }

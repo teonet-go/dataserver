@@ -35,13 +35,6 @@ type DataServer struct {
 type DataServerMap map[DataServerRequest]interface{}
 type DataServerRequest [startPacketLength]byte
 
-type DataServerReadAllCallback func(buf *bytes.Buffer, err error)
-type DataServerAcceptedCallback func(startPacket *dataserver.StartPacket, reader io.Reader, err error)
-
-type DataServerReader struct {
-	net.Conn
-}
-
 // NewDataServer creates a new DataServer object.
 func NewDataServer(localAddr string) (ds *DataServer, err error) {
 	ds = &DataServer{m: make(DataServerMap), RWMutex: new(sync.RWMutex)}
@@ -49,9 +42,21 @@ func NewDataServer(localAddr string) (ds *DataServer, err error) {
 	return
 }
 
-// SetReadRequest sets read and returns reader to get data
-func (ds *DataServer) SetReadRequest(startPacket *dataserver.StartPacket,
-	res interface{}) (err error) {
+// SetRequest registers read or write request depending on the type of start
+// packet. Callback function calls when connection accepted.
+//
+// Avalable callback functions:
+//
+//	// Read callback
+//	func(startPacket *dataserver.StartPacket, reader io.Reader, err error)
+//
+//	// Write callback
+//	func(startPacket *dataserver.StartPacket, writer io.Writer, err error)
+//
+//	// ReadAll calback
+//	func(buf *bytes.Buffer, err error)
+func (ds *DataServer) SetRequest(startPacket *dataserver.StartPacket,
+	callback interface{}) (err error) {
 	b := startPacket.Bytes()
 
 	// Check start packet length
@@ -67,7 +72,7 @@ func (ds *DataServer) SetReadRequest(startPacket *dataserver.StartPacket,
 	}
 
 	// Register start packet and return
-	ds.add(b, res)
+	ds.add(b, callback)
 	return
 }
 
@@ -92,7 +97,7 @@ func (ds DataServer) listening(localAddr string) (ln net.Listener, err error) {
 			log.Printf("connected from: %s\n", conn.RemoteAddr())
 
 			// Handle the connection in a new goroutine
-			go ds.handleConnection(&DataServerReader{conn})
+			go ds.handleConnection(conn)
 		}
 	}()
 
@@ -100,10 +105,10 @@ func (ds DataServer) listening(localAddr string) (ln net.Listener, err error) {
 }
 
 // handleConnection handles the client connection.
-func (ds DataServer) handleConnection(dsr *DataServerReader) {
+func (ds DataServer) handleConnection(conn net.Conn) {
 
 	// Close the connection when we're done
-	defer dsr.Conn.Close()
+	defer conn.Close()
 
 	var buf = new(bytes.Buffer)
 	var err error
@@ -112,7 +117,7 @@ func (ds DataServer) handleConnection(dsr *DataServerReader) {
 	waitStartPacket := make(chan error, 1)
 	startPacketBuf := make([]byte, startPacketLength)
 	go func() {
-		_, err := dsr.Conn.Read(startPacketBuf)
+		_, err := conn.Read(startPacketBuf)
 		if err == nil {
 			// Check received start packet
 			if !ds.check(startPacketBuf) {
@@ -155,13 +160,12 @@ func (ds DataServer) handleConnection(dsr *DataServerReader) {
 	// Execute callback
 	switch cb := callback.(type) {
 
-	// Read All incoming data by chanks to buffer
-	// DataServerReadAllCallback
+	// Read All incoming data to buffer callback
 	case func(buf *bytes.Buffer, err error):
 		total := 0
 		b := make([]byte, ChankPacketLength)
 		for {
-			n, err := dsr.Conn.Read(b)
+			n, err := conn.Read(b)
 			if err != nil {
 				if err == io.EOF {
 					// Done successfully
@@ -176,10 +180,13 @@ func (ds DataServer) handleConnection(dsr *DataServerReader) {
 		}
 		cb(buf, err)
 
-	// Execute accepted callback
-	// DataServerAcceptedCallback
-	case func(request *dataserver.StartPacket, reader io.Reader, err error):
-		cb(startPacket, dsr, err)
+	// Execute accepted read callback
+	case func(startPacket *dataserver.StartPacket, reader io.Reader, err error):
+		cb(startPacket, conn, err)
+
+	// Execute accepted write callback
+	case func(startPacket *dataserver.StartPacket, writer io.Writer, err error):
+		cb(startPacket, conn, err)
 
 	default:
 		log.Fatalln("some other callback", cb)

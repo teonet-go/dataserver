@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	READ = iota
-	WRITE
+	READ  = iota // Receive data on data server request.
+	WRITE        // Send data from data server request.
 )
 
 const StartPacketLength = 17

@@ -41,9 +41,10 @@ func main() {
 			return
 		}
 
-		// Connect to Data Server and send start packet (request)
+		// Write data to server.
+		// Connect to Data Server and send start packet (request).
 		startPacket := dataserver.MakeStartPacket(dataserver.READ, "start")
-		dc, err := client.NewDataClientWriter(remoteAddr, startPacket)
+		dc, err := client.NewDataClient(remoteAddr, startPacket)
 		if err != nil {
 			log.Println("can't connect to data server, error: ", err)
 			return
@@ -80,7 +81,7 @@ func main() {
 			p := make([]byte, client.ChankPacketLength)
 			var n int
 			for {
-				// Get data from reader
+				// Get data from buffer
 				n, err = buf.Read(p)
 				if err != nil {
 					if err == io.EOF {
@@ -97,5 +98,37 @@ func main() {
 			}
 			dc.Close()
 		}
+
+		// Read data from server.
+		// Connect to Data Server and send start packet (request).
+		startPacket = dataserver.MakeStartPacket(dataserver.WRITE, "start")
+		dc, err = client.NewDataClient(remoteAddr, startPacket)
+		if err != nil {
+			log.Println("can't connect to data server, error: ", err)
+			return
+		}
+		fmt.Printf("\nconnected to: %s\n", dc.RemoteAddr())
+
+		// TODO: get data from data server
+		fmt.Println("read using read write by chanks")
+		p := make([]byte, client.ChankPacketLength)
+		var n int
+		for {
+			// Get data from  DataClient connection
+			n, err = dc.Read(p)
+			if err != nil {
+				if err == io.EOF {
+					err = nil
+				}
+				break
+			}
+
+			// Print received data
+			fmt.Printf("got data, n, err: '%s' %d %v\n",
+				string(p[:n]), n, err)
+		}
+
+		// CLose connection
+		dc.Close()
 	}
 }

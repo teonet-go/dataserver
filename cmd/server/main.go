@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -32,14 +33,19 @@ func main() {
 	}
 
 	for {
+		var buf = new(bytes.Buffer)
+
+		// Set read request
 		startPacket := dataserver.MakeStartPacket(dataserver.READ, "start")
-		if err := ds.SetReadRequest(startPacket,
+		err := ds.SetRequest(startPacket,
 			func(startPacket *dataserver.StartPacket, reader io.Reader, err error) {
 
 				if err != nil {
-					fmt.Println("got error:", err)
+					fmt.Println("an error occurred while initializing the reader:", err)
 					return
 				}
+
+				fmt.Println("ready to read data")
 
 				p := make([]byte, server.ChankPacketLength)
 				for {
@@ -50,13 +56,39 @@ func main() {
 						}
 						break
 					}
+					buf.Write(p[:n])
 					fmt.Printf("got data, n, err: '%s' %d %v\n",
 						string(p[:n]), n, err)
 				}
 				log.Printf("done %x, err: %v\n\n", startPacket.Data, err)
 
+				// Set write request
+				startPacket = dataserver.MakeStartPacket(dataserver.WRITE, "start")
+				ds.SetRequest(startPacket,
+					func(startPacket *dataserver.StartPacket, writer io.Writer, err error) {
+
+						if err != nil {
+							fmt.Println("an error occurred while initializing the writer:", err)
+							return
+						}
+
+						fmt.Println("ready to write data")
+						for {
+							n, err := buf.Read(p)
+							if err != nil {
+								break
+							}
+							writer.Write(p[:n])
+							fmt.Printf("send data, n, err: '%s' %d %v\n",
+								string(p[:n]), n, err)
+						}
+						log.Printf("done %x, err: %v\n\n", startPacket.Data, err)
+					},
+				)
+
 			},
-		); err != nil {
+		)
+		if err != nil {
 			if err == server.ErrExistsStartPacket {
 				time.Sleep(250 * time.Millisecond)
 				continue
