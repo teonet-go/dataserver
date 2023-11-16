@@ -1,11 +1,16 @@
 package dataserver
 
-import "fmt"
+import (
+	"crypto/md5"
+	"fmt"
+)
 
 const (
 	READ = iota
 	WRITE
 )
+
+const StartPacketLength = 17
 
 // StartPacket contains start packet data and type, and methods to murshal &
 // unmarshal it.
@@ -19,6 +24,18 @@ type StartPacket struct {
 	Data []byte
 }
 
+// MakeStartPacket creates new start packet from Type and Name
+func MakeStartPacket(t byte, name string) (startPacket *StartPacket) {
+
+	startPacket = &StartPacket{Type: t}
+
+	h := md5.New()
+	h.Write([]byte(name))
+	startPacket.Data = h.Sum(nil)
+
+	return
+}
+
 // Bytes marshals start packet and returns byte slice
 func (s StartPacket) Bytes() (b []byte) {
 	b = append(b, s.Type)
@@ -30,7 +47,7 @@ func (s StartPacket) Bytes() (b []byte) {
 func (s *StartPacket) Unmarshal(b []byte) (err error) {
 
 	if len(b) <= 1 {
-		err = fmt.Errorf("wrong number of bytes")
+		err = fmt.Errorf("incorrect input length")
 		return
 	}
 	s.Type = b[0]

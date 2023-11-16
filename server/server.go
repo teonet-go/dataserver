@@ -14,14 +14,16 @@ import (
 )
 
 const (
-	startPacketLength = 6
+	startPacketLength = dataserver.StartPacketLength
 	ChankPacketLength = 21
 	timeout           = 5 * time.Second
 )
 
 var (
-	ErrTimeout              = errors.New("timeout")
-	ErrIncorrectStartPacket = errors.New("incorrect start packet")
+	ErrTimeout                    = errors.New("timeout")
+	ErrIncorrectStartPacket       = errors.New("incorrect start packet")
+	ErrIncorrectStartPacketLength = errors.New("incorrect packet length")
+	ErrExistsStartPacket          = errors.New("start packet already exists")
 )
 
 // DataServer is TCP Data Server data structure and methods receiver.
@@ -34,7 +36,7 @@ type DataServerMap map[DataServerRequest]interface{}
 type DataServerRequest [startPacketLength]byte
 
 type DataServerReadAllCallback func(buf *bytes.Buffer, err error)
-type DataServerAcceptedCallback func(request dataserver.StartPacket, reader io.Reader, err error)
+type DataServerAcceptedCallback func(startPacket *dataserver.StartPacket, reader io.Reader, err error)
 
 type DataServerReader struct {
 	net.Conn
@@ -48,9 +50,25 @@ func NewDataServer(localAddr string) (ds *DataServer, err error) {
 }
 
 // SetReadRequest sets read and returns reader to get data
-func (ds *DataServer) SetReadRequest(request dataserver.StartPacket,
-	res interface{}) {
-	ds.add(request.Bytes(), res)
+func (ds *DataServer) SetReadRequest(startPacket *dataserver.StartPacket,
+	res interface{}) (err error) {
+	b := startPacket.Bytes()
+
+	// Check start packet length
+	if len(b) != startPacketLength {
+		err = ErrIncorrectStartPacketLength
+		return
+	}
+
+	// Check start packet already registered
+	if ok := ds.check(b); ok {
+		err = ErrExistsStartPacket
+		return
+	}
+
+	// Register start packet and return
+	ds.add(b, res)
+	return
 }
 
 // listening starts listening and accept incoming connections.
@@ -117,13 +135,24 @@ func (ds DataServer) handleConnection(dsr *DataServerReader) {
 		log.Println("got start packet error:", err)
 		return
 	}
-	log.Println("start packet received")
 
+	// Unmarshal start packet buffer
+	startPacket := &dataserver.StartPacket{}
+	err = startPacket.Unmarshal(startPacketBuf)
+	if err != nil {
+		err = fmt.Errorf("start packet unmarshal error: %s", err)
+		log.Println(err)
+		return
+	}
+	log.Printf("start packet received %x\n", startPacket)
+
+	// Get callback function registerred for this start packet
 	callback, ok := ds.get(startPacketBuf)
 	if !ok {
 		callback = nil
 	}
 
+	// Execute callback
 	switch cb := callback.(type) {
 
 	// Read All incoming data by chanks to buffer
@@ -149,12 +178,7 @@ func (ds DataServer) handleConnection(dsr *DataServerReader) {
 
 	// Execute accepted callback
 	// DataServerAcceptedCallback
-	case func(request dataserver.StartPacket, reader io.Reader, err error):
-		startPacket := dataserver.StartPacket{}
-		err := startPacket.Unmarshal(startPacketBuf)
-		if err != nil {
-			err = fmt.Errorf("startPacket.Unmarshal error: %s", err)
-		}
+	case func(request *dataserver.StartPacket, reader io.Reader, err error):
 		cb(startPacket, dsr, err)
 
 	default:

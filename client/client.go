@@ -8,25 +8,25 @@ import (
 )
 
 const (
-	startPacketLength = 6
+	startPacketLength = dataserver.StartPacketLength
 	ChankPacketLength = 21
 	timeout           = 5 * time.Second
 )
 
 // DataClient is TCP Data Client data structure and methods receiver.
 type DataClient struct {
-	remoteAddr string
-	request    dataserver.StartPacket
+	remoteAddr  string
+	startPacket *dataserver.StartPacket
 	net.Conn
 }
 
 // NewDataClientWriter creates new DataClient, connects to DataServer and sends
 // request with start packets data.
-func NewDataClientWriter(remoteAddr string, request dataserver.StartPacket) (
+func NewDataClientWriter(remoteAddr string, startPacket *dataserver.StartPacket) (
 	dc *DataClient, err error) {
 
 	// Create new DataClient object
-	dc = &DataClient{remoteAddr: remoteAddr, request: request}
+	dc = &DataClient{remoteAddr: remoteAddr, startPacket: startPacket}
 
 	// Connect to the server
 	dc.Conn, err = net.Dial("tcp", remoteAddr)
@@ -35,7 +35,7 @@ func NewDataClientWriter(remoteAddr string, request dataserver.StartPacket) (
 	}
 
 	// Send start packet to the server
-	_, err = dc.Write(dc.request.Bytes())
+	_, err = dc.Write(dc.startPacket.Bytes())
 	if err != nil {
 		dc.Close()
 		return
