@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/teonet-go/teoss/dataserver"
+	"github.com/teonet-go/dataserver"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"io"
 	"log"
 
-	"github.com/teonet-go/teoss/dataserver"
-	"github.com/teonet-go/teoss/dataserver/server"
+	"github.com/teonet-go/dataserver"
+	"github.com/teonet-go/dataserver/server"
 )
 
 const (
