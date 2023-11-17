@@ -11,7 +11,7 @@ const (
 	WRITE        // Send data from data server request.
 )
 
-const StartPacketLength = 17
+const StartPacketLength = 25
 
 // StartPacket contains start packet data and type, and methods to murshal &
 // unmarshal it.
