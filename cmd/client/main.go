@@ -43,7 +43,7 @@ func main() {
 
 		// Write data to server.
 		// Connect to Data Server and send start packet (request).
-		startPacket := dataserver.MakeStartPacket(dataserver.READ, "start")
+		startPacket := dataserver.MakeStartPacket(dataserver.READ, "start", -1)
 		dc, err := client.NewDataClient(remoteAddr, startPacket)
 		if err != nil {
 			log.Println("can't connect to data server, error: ", err)
@@ -101,7 +101,7 @@ func main() {
 
 		// Read data from server.
 		// Connect to Data Server and send start packet (request).
-		startPacket = dataserver.MakeStartPacket(dataserver.WRITE, "start")
+		startPacket = dataserver.MakeStartPacket(dataserver.WRITE, "start", -1)
 		dc, err = client.NewDataClient(remoteAddr, startPacket)
 		if err != nil {
 			log.Println("can't connect to data server, error: ", err)

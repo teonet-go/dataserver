@@ -36,7 +36,7 @@ func main() {
 		var buf = new(bytes.Buffer)
 
 		// Set read request
-		startPacket := dataserver.MakeStartPacket(dataserver.READ, "start")
+		startPacket := dataserver.MakeStartPacket(dataserver.READ, "start", -1)
 		err := ds.SetRequest(startPacket,
 			func(startPacket *dataserver.StartPacket, reader io.Reader, err error) {
 
@@ -63,7 +63,7 @@ func main() {
 				log.Printf("done %x, err: %v\n\n", startPacket.Data, err)
 
 				// Set write request
-				startPacket = dataserver.MakeStartPacket(dataserver.WRITE, "start")
+				startPacket = dataserver.MakeStartPacket(dataserver.WRITE, "start", -1)
 				ds.SetRequest(startPacket,
 					func(startPacket *dataserver.StartPacket, writer io.Writer, err error) {
 
