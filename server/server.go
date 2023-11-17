@@ -94,7 +94,6 @@ func (ds DataServer) listening(localAddr string) (ln net.Listener, err error) {
 				log.Println("incomming connection error:", err)
 				continue
 			}
-			log.Printf("connected from: %s\n", conn.RemoteAddr())
 
 			// Handle the connection in a new goroutine
 			go ds.handleConnection(conn)
@@ -149,7 +148,6 @@ func (ds DataServer) handleConnection(conn net.Conn) {
 		log.Println(err)
 		return
 	}
-	log.Printf("start packet received %x\n", startPacket)
 
 	// Get callback function registerred for this start packet
 	callback, ok := ds.get(startPacketBuf)
