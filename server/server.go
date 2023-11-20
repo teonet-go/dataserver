@@ -42,6 +42,14 @@ func NewDataServer(localAddr string) (ds *DataServer, err error) {
 	return
 }
 
+// LocalPort returns local port number
+func (ds DataServer) LocalPort() (port int) {
+	if addr, ok := ds.ln.Addr().(*net.TCPAddr); ok {
+		port = addr.Port
+	}
+	return
+}
+
 // SetRequest registers read or write request depending on the type of start
 // packet. Callback function calls when connection accepted.
 //
