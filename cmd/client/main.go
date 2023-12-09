@@ -1,5 +1,8 @@
-// TCP client example
+// Copyright 2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
+// Dataserver TCP client example.
 package main
 
 import (
@@ -13,11 +16,14 @@ import (
 )
 
 const (
-	appShort   = "Simple TCP client"
-	appVersion = "0.0.1"
-	remoteAddr = "localhost:8089"
+	appShort   = "Simple TCP client" // Application short name.
+	appVersion = "0.0.1"             // Application version.
+	remoteAddr = "localhost:8089"    // Remote address of the dataserver.
 )
 
+// main is the entry point for the Dataserver TCP Client example. It connects
+// to a dataserver, writes some data, then reads back data. It demonstrates
+// using the dataserver client API.
 func main() {
 
 	// Show application logo
@@ -53,27 +59,6 @@ func main() {
 
 		// Execute write data by case
 		switch j {
-
-		// // Write all data buffer
-		// case 1:
-		// 	title(dc, "write all data buffer")
-		// 	err = dc.WriteAll()
-		// 	if err != nil {
-		// 		log.Println("write all, error:", err)
-		// 		return
-		// 	}
-
-		// // Write all data as one string
-		// case 2:
-		// 	title(dc, "write all data as one string")
-		// 	io.WriteString(dc, buf.String())
-		// 	dc.Close()
-
-		// // Write using io.Copy
-		// case 3:
-		// 	title(dc, "write using io.Copy")
-		// 	io.Copy(dc.Conn, buf)
-		// 	dc.Close()
 
 		// Write using read write by chanks
 		case 4:

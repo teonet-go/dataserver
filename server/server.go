@@ -1,3 +1,8 @@
+// Copyright 2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Server package provides the TCP server implementation and handlers.
 package server
 
 import (
@@ -14,19 +19,34 @@ import (
 )
 
 const (
+	// startPacketLength is the length in bytes of the start packet used to
+	// initialize new connections.
 	startPacketLength = dataserver.StartPacketLength
+
+	// ChankPacketLength is the max length in bytes of data chunks sent after
+	// the start packet.
 	ChankPacketLength = 21
-	timeout           = 5 * time.Second
+
+	// timeout is the read/write timeout for connections.
+	timeout = 5 * time.Second
 )
 
 var (
-	ErrTimeout                    = errors.New("timeout")
-	ErrIncorrectStartPacket       = errors.New("incorrect start packet")
+	// ErrTimeout is returned when a read or write times out.
+	ErrTimeout = errors.New("timeout")
+
+	// ErrIncorrectStartPacket is returned when the start packet is malformed.
+	ErrIncorrectStartPacket = errors.New("incorrect start packet")
+
+	// ErrExistsStartPacket is returned when the start packet already exists.
+	ErrExistsStartPacket = errors.New("start packet already exists")
+
+	// ErrIncorrectStartPacketLength is returned when the start packet length is incorrect.
 	ErrIncorrectStartPacketLength = errors.New("incorrect packet length")
-	ErrExistsStartPacket          = errors.New("start packet already exists")
 )
 
-// DataServer is TCP Data Server data structure and methods receiver.
+// DataServer is the main server instance. It contains the TCP listener,
+// request handler map, and sync mutex.
 type DataServer struct {
 	ln net.Listener
 	m  DataServerMap
@@ -35,14 +55,17 @@ type DataServer struct {
 type DataServerMap map[DataServerRequest]interface{}
 type DataServerRequest [startPacketLength]byte
 
-// NewDataServer creates a new DataServer object.
+// NewDataServer creates a new DataServer instance by initializing a DataServer
+// struct, creating a new sync.RWMutex, and starting the TCP listener.
+// It accepts a localAddr string to listen on and returns a DataServer pointer
+// and error.
 func NewDataServer(localAddr string) (ds *DataServer, err error) {
 	ds = &DataServer{m: make(DataServerMap), RWMutex: new(sync.RWMutex)}
 	ds.ln, err = ds.listening(localAddr)
 	return
 }
 
-// LocalPort returns local port number
+// LocalPort returns the local port number that the DataServer is listening on.
 func (ds DataServer) LocalPort() (port int) {
 	if addr, ok := ds.ln.Addr().(*net.TCPAddr); ok {
 		port = addr.Port
@@ -84,7 +107,9 @@ func (ds *DataServer) SetRequest(startPacket *dataserver.StartPacket,
 	return
 }
 
-// listening starts listening and accept incoming connections.
+// listening starts a TCP listener for the server on the provided local address
+// and port. It launches a goroutine to accept incoming connections and handle
+// them by calling ds.handleConnection.
 func (ds DataServer) listening(localAddr string) (ln net.Listener, err error) {
 
 	// Start listening
@@ -111,7 +136,10 @@ func (ds DataServer) listening(localAddr string) (ln net.Listener, err error) {
 	return
 }
 
-// handleConnection handles the client connection.
+// handleConnection handles an incoming client connection.
+// It reads the start packet, validates it, looks up the
+// registered callback function, and executes the callback
+// based on its type.
 func (ds DataServer) handleConnection(conn net.Conn) {
 
 	// Close the connection when we're done
@@ -221,7 +249,9 @@ func (ds *DataServer) check(request []byte) (ok bool) {
 	return
 }
 
-// get returns requests callback function
+// get returns the callback function and ok bool for the given request if it
+// exists in the request map ds.m. It locks the read lock, defer unlocks, and
+// looks up the request in ds.m to find the callback.
 func (ds *DataServer) get(request []byte) (callback interface{}, ok bool) {
 	ds.RLock()
 	defer ds.RUnlock()

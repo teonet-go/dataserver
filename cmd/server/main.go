@@ -1,4 +1,8 @@
-// TCP server example
+// Copyright 2023 Kirill Scherba <kirill@scherba.ru>. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Dataserver TCP server example.
 package main
 
 import (
@@ -13,11 +17,14 @@ import (
 )
 
 const (
-	appShort   = "Simple TCP server"
-	appVersion = "0.0.1"
-	localAddr  = ":8089"
+	appShort   = "Simple TCP server" // Application short name.
+	appVersion = "0.0.1"             // Application version.
+	localAddr  = ":8089"             // Local address of the dataserver.
 )
 
+// main is the entry point for the Dataserver TCP Server example. It initializes
+// the dataserver, sets up read and write requests in a loop with callbacks,
+// and handles errors.
 func main() {
 
 	// Show application logo
@@ -97,21 +104,4 @@ func main() {
 			return
 		}
 	}
-
-	// for {
-	// 	// Set Request for read file and get result string in callback
-	// 	request := dataserver.StartPacket{
-	// 		Type: dataserver.READ,
-	// 		Data: []byte("start"),
-	// 	}
-	// 	ds.SetReadRequest(request, func(buf *bytes.Buffer, err error) {
-	// 		if err != nil {
-	// 			fmt.Println("error:", err)
-	// 			return
-	// 		}
-	// 		fmt.Printf("\ngot result:\n%s\n", buf.String())
-	// 	})
-	// }
-
-	// select {}
 }
